@@ -134,23 +134,23 @@
       } else if (storedData && typeof storedData.password === "string") {
         storedPassword = storedData.password;
       } else {
-        errorDiv.textContent = "Stored password invalid.";
+        errorDiv.textContent = "Mot de password incorrect!";
         return;
       }
 
       const enteredPassword = prompt(`Enter password for ${username}:`);
       if (enteredPassword === null) {
-        errorDiv.textContent = "Login cancelled.";
+        errorDiv.textContent = "Login annulé.";
         return;
       }
 
       if (enteredPassword.trim() !== storedPassword.trim()) {
-        errorDiv.textContent = "Incorrect password.";
+        errorDiv.textContent = "password incorrect";
         return;
       }
 
       loggedInUser = username;
-      errorDiv.textContent = "Login successful.";
+      errorDiv.textContent = "Login reussi !.";
       document.getElementById('getCodeBtn').disabled = false;
       showUserHistory(loggedInUser);
 
