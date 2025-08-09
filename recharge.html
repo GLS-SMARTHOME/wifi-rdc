@@ -168,12 +168,12 @@
     resultDiv.style.display = "none";
 
     if (!loggedInUser) {
-      errorDiv.textContent = "You must be logged in.";
+      errorDiv.textContent = "Vous devez vous connectés!";
       return;
     }
 
     if (now - lastClickTime < 5000) {
-      errorDiv.textContent = "Please wait 5 seconds before next request.";
+      errorDiv.textContent = "attendre 5 secondes, puis réessayez!";
       return;
     }
     lastClickTime = now;
@@ -204,10 +204,10 @@
           showUserHistory(loggedInUser);
 
         } else {
-          errorDiv.textContent = "Database list is empty.";
+          errorDiv.textContent = "Liste Database est vide.";
         }
       } else {
-        errorDiv.textContent = "No data found in database.";
+        errorDiv.textContent = "Aucune donnée trouvé in database.";
       }
     } catch (err) {
       errorDiv.textContent = "Error: " + err.message;
@@ -220,7 +220,7 @@
     db.ref("pickedItems").child(username).once("value", snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        let html = "<h3>Your Picked Items</h3><ul>";
+        let html = "<h3>Historique de vente</h3><ul>";
         for (let recordKey in data) {
           const record = data[recordKey];
           html += `<li>${record.item} <em>(${new Date(record.time).toLocaleString()})</em></li>`;
@@ -228,7 +228,7 @@
         html += "</ul>";
         userHistoryDiv.innerHTML = html;
       } else {
-        userHistoryDiv.innerHTML = "<p>No history yet.</p>";
+        userHistoryDiv.innerHTML = "<p>Faites votre 1er Vente !  </p>";
       }
       userHistoryDiv.style.display = "block";
     });
