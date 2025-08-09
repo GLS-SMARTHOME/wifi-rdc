@@ -1,286 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Keep Code Visible Until Next Session</title>
-  <style>
-    /* Your existing styles unchanged */
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      text-align: center;
-    }
-    .selectors-container {
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .item {
-      display: flex;
-      flex-direction: column;
-      flex: 1 1 150px;
-      min-width: 150px;
-      max-width: 200px;
-    }
-    label {
-      font-weight: bold;
-      margin-bottom: 6px;
-      text-align: left;
-    }
-    select, input[type="password"] {
-      font-size: 16px;
-      height: 2em;
-      padding: 4px 8px;
-      box-sizing: border-box;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      transition: border-color 0.3s;
-    }
-    select:focus, input[type="password"]:focus {
-      border-color: #007BFF;
-      outline: none;
-    }
-    button {
-      font-size: 16px;
-      padding: 10px 20px;
-      cursor: pointer;
-      border: none;
-      background-color: #007BFF;
-      color: white;
-      border-radius: 4px;
-      transition: background-color 0.3s;
-      margin: 20px auto;
-      display: block;
-    }
-    button:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
-    button:hover:not(:disabled) {
-      background-color: #0056b3;
-    }
-    #selectedCodeDisplay {
-      margin-top: 30px;
-      font-size: 3em;
-      font-weight: bold;
-      color: #007BFF;
-      min-height: 1.5em;
-    }
-    #result {
-      font-size: 16px;
-      margin-top: 10px;
-      color: #333;
-      white-space: pre-line;
-      min-height: 3em;
-    }
-    #networkStatus {
-      margin-top: 10px;
-      font-weight: bold;
-      color: red;
-      min-height: 1.2em;
-    }
-    @media (max-width: 480px) {
-      .selectors-container {
-        flex-direction: column;
-        gap: 15px;
-      }
-      .item {
-        min-width: auto;
-        width: 100%;
-        max-width: none;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Login & Random Item</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    background: white;
+    padding: 20px;
+    max-width: 400px;
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  h2 {
+    text-align: center;
+  }
+  select, input, button {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  button {
+    background: #007BFF;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+  .result {
+    margin-top: 15px;
+    padding: 10px;
+    background: #e9ffe9;
+    border: 1px solid #b2ffb2;
+    border-radius: 4px;
+    text-align: center;
+  }
+  .error {
+    color: red;
+    text-align: center;
+  }
+</style>
 </head>
 <body>
+<div class="container">
+  <h2>Login</h2>
+  <select id="username">
+    <option value="">Select User</option>
+    <option value="alice">Alice</option>
+    <option value="bob">Bob</option>
+    <option value="charlie">Charlie</option>
+  </select>
+  <input type="password" id="password" placeholder="Enter Password">
+  <button id="loginBtn">Submit</button>
+  <div id="error" class="error"></div>
+  <div id="result" class="result" style="display:none;"></div>
+</div>
 
-  <h1>Agent & Abonnement Selection</h1>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<script>
+// ==== CONFIGURE FIREBASE ====
+const firebaseConfig = {
+  apiKey: "AIzaSyBSE0qs8lxr0x-xQL0jt47gNfjiOY5Z9BE",
+  authDomain: "wifi-rdc.firebaseapp.com",
+  databaseURL: "https://wifi-rdc-default-rtdb.firebaseio.com",
+  projectId: "wifi-rdc",
+  storageBucket: "wifi-rdc.firebasestorage.app",
+  messagingSenderId: "1091268810655",
+  appId: "1:1091268810655:web:2ba01f8adf7f190cd00faa",
+  measurementId: "G-B53B9JCJXY"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  <div class="selectors-container">
-    <div class="item">
-      <label for="select1">Agent</label>
-      <select id="select1" aria-label="Agent" onchange="resetSession()">
-        <option value="">-- Agent --</option>
-        <option value="Galois">Galois</option>
-        <option value="Salem">Salem</option>
-        <option value="Phose">Phose</option>
-      </select>
-    </div>
+// PRESET USERS & PASSWORDS
+const users = {
+  alice: "123",
+  bob: "secret456",
+  charlie: "mypassword"
+};
 
-    <div class="item">
-      <label for="select2">Abonnement</label>
-      <select id="select2" aria-label="Abonnement" onchange="resetSession()">
-        <option value="">-- Abonnement --</option>
-        <option value="Daily">Daily</option>
-        <option value="Weekly">Weekly</option>
-        <option value="Monthly">Monthly</option>
-      </select>
-    </div>
+let lastClickTime = 0; // to track cooldown
 
-    <div class="item">
-      <label for="passwordInput">Password</label>
-      <input
-        type="password"
-        id="passwordInput"
-        aria-label="Password"
-        placeholder="Enter password"
-        autocomplete="current-password"
-        oninput="clearMessage()"
-      />
-    </div>
-  </div>
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  const now = Date.now();
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const errorDiv = document.getElementById('error');
+  const resultDiv = document.getElementById('result');
+  errorDiv.textContent = "";
+  resultDiv.style.display = "none";
 
-  <button id="getCodeBtn" onclick="validatePassword()">Verify Password & Pick Code</button>
+  // Cooldown check
+  if (now - lastClickTime < 5000) {
+    errorDiv.textContent = "Please wait 5 seconds before next request.";
+    return;
+  }
+  lastClickTime = now;
 
-  <div id="networkStatus" role="alert" aria-live="assertive"></div>
+  if (!username || !password) {
+    errorDiv.textContent = "Please select a user and enter password.";
+    return;
+  }
+  if (users[username] !== password) {
+    errorDiv.textContent = "Incorrect password.";
+    return;
+  }
 
-  <h1 id="selectedCodeDisplay"></h1>
+  try {
+    const snapshot = await db.ref("myList").once("value");
+    if (snapshot.exists()) {
+      let list = snapshot.val();
 
-  <p id="result" aria-live="polite"></p>
+      // Filter nulls
+      let itemsArray = Array.isArray(list)
+        ? list.map((value, index) => ({ key: index, value }))
+              .filter(item => item.value !== null && item.value !== undefined)
+        : Object.keys(list).map(key => ({ key, value: list[key] }));
 
-  <script>
-    const agentPasswords = {
-      Galois: '111',
-      Salem: '222',
-      Phose: '333'
-    };
+      if (itemsArray.length > 0) {
+        const randomIndex = Math.floor(Math.random() * itemsArray.length);
+        const chosenItem = itemsArray[randomIndex];
 
-    let abonnementCodes = {
-      Daily: [
-        { value: 'D001', text: 'valide pour 24h' },
-        { value: 'D002', text: 'valide pour 24h' },
-        { value: 'D003', text: 'valide pour 24h' },
-        { value: 'D004', text: 'valide pour 24h' },
-        { value: 'D005', text: 'valide pour 24h' },
-        { value: 'D006', text: 'valide pour 24h' },
-      ],
-      Weekly: [
-        { value: 'W001', text: 'valide pour 7 jours' },
-        { value: 'W002', text: 'valide pour 7 jours' },
-        { value: 'W003', text: 'valide pour 7 jours' },
-        { value: 'W004', text: 'valide pour 7 jours' },
-        { value: 'W005', text: 'valide pour 7 jours' },
-        { value: 'W006', text: 'valide pour 7 jours' },
-        { value: 'W007', text: 'valide pour 7 jours' },
-        { value: 'W008', text: 'valide pour 7 jours' },
-        { value: 'W009', text: 'valide pour 7 jours' },
-      ],
-      Monthly: [
-        { value: 'M001', text: 'valide pour 1 mois' },
-        { value: 'M002', text: 'valide pour 1 mois' },
-        { value: 'M003', text: 'valide pour 1 mois' },
-        { value: 'M004', text: 'valide pour 1 mois' },
-        { value: 'M005', text: 'valide pour 1 mois' },
-        { value: 'M006', text: 'valide pour 1 mois' },
-      ]
-    };
+        // Show result
+        resultDiv.textContent = "Random item: " + chosenItem.value;
+        resultDiv.style.display = "block";
 
-    let hasRetrievedCode = false;
+        // Delete from myList
+        await db.ref("myList").child(chosenItem.key).remove();
 
-    const selectedCodeDisplay = document.getElementById('selectedCodeDisplay');
-    const result = document.getElementById('result');
-    const getCodeBtn = document.getElementById('getCodeBtn');
-    const networkStatus = document.getElementById('networkStatus');
+        // Store picked item with timestamp (append instead of overwrite)
+const timestamp = new Date().toISOString();
+await db.ref("pickedItems").child(username).push({
+  item: chosenItem.value,
+  time: timestamp
+});
 
-    function updateNetworkStatus() {
-      if (navigator.onLine) {
-        networkStatus.textContent = 'You are ONLINE';
-        networkStatus.style.color = 'green';
-        getCodeBtn.disabled = false;
       } else {
-        networkStatus.textContent = 'No internet connection. Please connect to the internet to use this feature.';
-        networkStatus.style.color = 'red';
-        getCodeBtn.disabled = true;
+        errorDiv.textContent = "Database list is empty.";
+      }
+    } else {
+      errorDiv.textContent = "No data found in database.";
+    }
+  } catch (err) {
+    errorDiv.textContent = "Error: " + err.message;
+  }
+});
+
+// ====== Real-time listener for picked items ======
+db.ref("pickedItems").on("value", snapshot => {
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    let displayText = "Picked Items History:\n";
+    for (let user in data) {
+      displayText += `${user}:\n`;
+      for (let recordKey in data[user]) {
+        const record = data[user][recordKey];
+        displayText += `  - ${record.item} (at ${record.time})\n`;
       }
     }
+    console.log(displayText); // replace with DOM update if needed
+  }
+});
 
-    window.addEventListener('online', updateNetworkStatus);
-    window.addEventListener('offline', updateNetworkStatus);
 
-    // Initial check
-    updateNetworkStatus();
-
-    function resetSession() {
-      // Reset inputs & states except keep the displayed code
-      hasRetrievedCode = false;
-      result.textContent = '';
-      document.getElementById('passwordInput').value = '';
-      if (navigator.onLine) {
-        getCodeBtn.disabled = false;
-      }
-      // Keep selectedCodeDisplay as is
-    }
-
-    function clearMessage() {
-      if (!hasRetrievedCode) {
-        result.textContent = '';
-      }
-    }
-
-    function validatePassword() {
-      if (!navigator.onLine) {
-        alert('Internet connection required to verify password and pick a code.');
-        return;
-      }
-
-      if (hasRetrievedCode) {
-        alert('You have already retrieved a code this session. Please reset selections to get a new code.');
-        return;
-      }
-
-      const agent = document.getElementById('select1').value;
-      const abonnement = document.getElementById('select2').value;
-      const password = document.getElementById('passwordInput').value.trim();
-
-      result.textContent = '';
-
-      if (!agent) {
-        alert('Please select an Agent.');
-        return;
-      }
-      if (!abonnement) {
-        alert('Please select an Abonnement.');
-        return;
-      }
-      if (!password) {
-        alert('Please enter the password.');
-        return;
-      }
-
-      if (agentPasswords[agent] !== password) {
-        alert('Password does not match the selected Agent. Please try again.');
-        return;
-      }
-
-      let codes = abonnementCodes[abonnement];
-      if (!codes || codes.length === 0) {
-        result.textContent = 'No codes available for this Abonnement.';
-        return;
-      }
-
-      const randomIndex = Math.floor(Math.random() * codes.length);
-      const randomCode = codes[randomIndex];
-
-      abonnementCodes[abonnement] = codes.filter((_, index) => index !== randomIndex);
-
-      selectedCodeDisplay.textContent = randomCode.value;
-      result.textContent = `Votre mot de passe: ${randomCode.text}`;
-
-      hasRetrievedCode = true;
-      getCodeBtn.disabled = true;
-
-      // Reset inputs except the code display, so user is effectively logged out
-      document.getElementById('select1').value = '';
-      document.getElementById('select2').value = '';
-      document.getElementById('passwordInput').value = '';
-    }
-  </script>
-
+</script>
 </body>
 </html>
