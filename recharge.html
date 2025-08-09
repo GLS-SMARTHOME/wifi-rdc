@@ -55,6 +55,7 @@
 </head>
 <body>
 <div class="container">
+  <div class="container">
   <h2>Login</h2>
   <select id="username">
     <option value="">Select User</option>
@@ -63,10 +64,13 @@
     <option value="charlie">Charlie</option>
   </select>
   <input type="password" id="password" placeholder="Enter Password">
-  <button id="loginBtn">Submit</button>
+  <button id="loginBtn">Login</button>
+  <button id="getCodeBtn" disabled>Get Code</button> <!-- New button -->
   <div id="error" class="error"></div>
   <div id="result" class="result" style="display:none;"></div>
+  <div id="history" style="display:none; margin-top:15px;"></div>
 </div>
+
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -89,27 +93,18 @@ const db = firebase.database();
 // PRESET USERS & PASSWORDS
 const users = {
   alice: "123",
-  bob: "secret456",
+  bob: "111",
   charlie: "mypassword"
 };
+let lastClickTime = 0;
+let loggedInUser = null;
 
-let lastClickTime = 0; // to track cooldown
-
-document.getElementById('loginBtn').addEventListener('click', async () => {
-  const now = Date.now();
+document.getElementById('loginBtn').addEventListener('click', () => {
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
   const errorDiv = document.getElementById('error');
-  const resultDiv = document.getElementById('result');
-  errorDiv.textContent = "";
-  resultDiv.style.display = "none";
 
-  // Cooldown check
-  if (now - lastClickTime < 5000) {
-    errorDiv.textContent = "Please wait 5 seconds before next request.";
-    return;
-  }
-  lastClickTime = now;
+  errorDiv.textContent = "";
 
   if (!username || !password) {
     errorDiv.textContent = "Please select a user and enter password.";
@@ -120,12 +115,38 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
     return;
   }
 
+  loggedInUser = username;
+  document.getElementById('getCodeBtn').disabled = false;
+  errorDiv.textContent = "Login successful.";
+
+  // Show this user's history right after login
+  showUserHistory(loggedInUser);
+});
+
+document.getElementById('getCodeBtn').addEventListener('click', async () => {
+  const now = Date.now();
+  const errorDiv = document.getElementById('error');
+  const resultDiv = document.getElementById('result');
+
+  errorDiv.textContent = "";
+  resultDiv.style.display = "none";
+
+  if (!loggedInUser) {
+    errorDiv.textContent = "You must be logged in.";
+    return;
+  }
+
+  // Cooldown
+  if (now - lastClickTime < 5000) {
+    errorDiv.textContent = "Please wait 5 seconds before next request.";
+    return;
+  }
+  lastClickTime = now;
+
   try {
     const snapshot = await db.ref("myList").once("value");
     if (snapshot.exists()) {
       let list = snapshot.val();
-
-      // Filter nulls
       let itemsArray = Array.isArray(list)
         ? list.map((value, index) => ({ key: index, value }))
               .filter(item => item.value !== null && item.value !== undefined)
@@ -134,20 +155,19 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
       if (itemsArray.length > 0) {
         const randomIndex = Math.floor(Math.random() * itemsArray.length);
         const chosenItem = itemsArray[randomIndex];
-
-        // Show result
         resultDiv.textContent = "Random item: " + chosenItem.value;
         resultDiv.style.display = "block";
 
-        // Delete from myList
         await db.ref("myList").child(chosenItem.key).remove();
 
-        // Store picked item with timestamp (append instead of overwrite)
-const timestamp = new Date().toISOString();
-await db.ref("pickedItems").child(username).push({
-  item: chosenItem.value,
-  time: timestamp
-});
+        const timestamp = new Date().toISOString();
+        await db.ref("pickedItems").child(loggedInUser).push({
+          item: chosenItem.value,
+          time: timestamp
+        });
+
+        // Refresh this user's history after picking a code
+        showUserHistory(loggedInUser);
 
       } else {
         errorDiv.textContent = "Database list is empty.";
@@ -159,6 +179,27 @@ await db.ref("pickedItems").child(username).push({
     errorDiv.textContent = "Error: " + err.message;
   }
 });
+
+function showUserHistory(username) {
+  const historyDiv = document.getElementById('history');
+  db.ref("pickedItems").child(username).once("value", snapshot => {
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      let html = "<h3>Your Picked Items</h3><ul>";
+      for (let recordKey in data) {
+        const record = data[recordKey];
+        html += `<li>${record.item} <em>(${record.time})</em></li>`;
+      }
+      html += "</ul>";
+      historyDiv.innerHTML = html;
+    } else {
+      historyDiv.innerHTML = "<p>No history yet.</p>";
+    }
+    historyDiv.style.display = "block";
+  });
+}
+
+
 
 // ====== Real-time listener for picked items ======
 db.ref("pickedItems").on("value", snapshot => {
@@ -176,6 +217,25 @@ db.ref("pickedItems").on("value", snapshot => {
   }
 });
 
+const historyDiv = document.createElement("div");
+historyDiv.id = "history";
+document.querySelector(".container").appendChild(historyDiv);
+
+db.ref("pickedItems").on("value", snapshot => {
+  if (snapshot.exists()) {
+    const data = snapshot.val();
+    let html = "<h3>Picked Items History</h3>";
+    for (let user in data) {
+      html += `<strong>${user}:</strong><ul>`;
+      for (let recordKey in data[user]) {
+        const record = data[user][recordKey];
+        html += `<li>${record.item} <em>(${record.time})</em></li>`;
+      }
+      html += "</ul>";
+    }
+    document.getElementById("history").innerHTML = html;
+  }
+});
 
 </script>
 </body>
