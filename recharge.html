@@ -190,7 +190,7 @@
         if (itemsArray.length > 0) {
           const randomIndex = Math.floor(Math.random() * itemsArray.length);
           const chosenItem = itemsArray[randomIndex];
-          resultDiv.textContent = "Random item: " + chosenItem.value;
+          resultDiv.textContent = "Code Wifi: " + chosenItem.value;
           resultDiv.style.display = "block";
 
           await db.ref("myList").child(chosenItem.key).remove();
