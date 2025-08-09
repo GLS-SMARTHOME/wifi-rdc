@@ -71,12 +71,12 @@
 <div class="container">
   <h2>Login</h2>
   <select id="username">
-    <option value="">Select User</option>
-    <option value="alice">Alice</option>
-    <option value="bob">Bob</option>
-    <option value="charlie">Charlie</option>
+    <option value="">Choisir Agent</option>
+    <option value="Galois">Galois</option>
+    <option value="Salem">Salem</option>
+    <option value="Tryphose">Tryphose</option>
   </select>
-  <button id="loginBtn">Login</button>
+  <button id="loginBtn">GLS WIFI Login</button>
   <button id="getCodeBtn" disabled>Get Code</button>
   <div id="error" class="error"></div>
   <div id="result" class="result" style="display:none;"></div>
@@ -115,7 +115,7 @@
     document.getElementById('userHistory').style.display = "none";
 
     if (!username) {
-      errorDiv.textContent = "Please select a user.";
+      errorDiv.textContent = "Choisir un agent SVP! .";
       return;
     }
 
