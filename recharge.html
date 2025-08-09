@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Keep Code Visible Until Next Session</title>
   <style>
+    /* Your existing styles unchanged */
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
@@ -78,6 +79,12 @@
       white-space: pre-line;
       min-height: 3em;
     }
+    #networkStatus {
+      margin-top: 10px;
+      font-weight: bold;
+      color: red;
+      min-height: 1.2em;
+    }
     @media (max-width: 480px) {
       .selectors-container {
         flex-direction: column;
@@ -131,6 +138,8 @@
 
   <button id="getCodeBtn" onclick="validatePassword()">Verify Password & Pick Code</button>
 
+  <div id="networkStatus" role="alert" aria-live="assertive"></div>
+
   <h1 id="selectedCodeDisplay"></h1>
 
   <p id="result" aria-live="polite"></p>
@@ -177,13 +186,34 @@
     const selectedCodeDisplay = document.getElementById('selectedCodeDisplay');
     const result = document.getElementById('result');
     const getCodeBtn = document.getElementById('getCodeBtn');
+    const networkStatus = document.getElementById('networkStatus');
+
+    function updateNetworkStatus() {
+      if (navigator.onLine) {
+        networkStatus.textContent = 'You are ONLINE';
+        networkStatus.style.color = 'green';
+        getCodeBtn.disabled = false;
+      } else {
+        networkStatus.textContent = 'No internet connection. Please connect to the internet to use this feature.';
+        networkStatus.style.color = 'red';
+        getCodeBtn.disabled = true;
+      }
+    }
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
+    // Initial check
+    updateNetworkStatus();
 
     function resetSession() {
       // Reset inputs & states except keep the displayed code
       hasRetrievedCode = false;
       result.textContent = '';
       document.getElementById('passwordInput').value = '';
-      getCodeBtn.disabled = false;
+      if (navigator.onLine) {
+        getCodeBtn.disabled = false;
+      }
       // Keep selectedCodeDisplay as is
     }
 
@@ -194,6 +224,11 @@
     }
 
     function validatePassword() {
+      if (!navigator.onLine) {
+        alert('Internet connection required to verify password and pick a code.');
+        return;
+      }
+
       if (hasRetrievedCode) {
         alert('You have already retrieved a code this session. Please reset selections to get a new code.');
         return;
