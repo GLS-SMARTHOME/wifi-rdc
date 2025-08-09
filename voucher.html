@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Wi-Fi Voucher Portal</title>
+<style>
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f8f8f8;
+    color: #333;
+    text-align: center;
+  }
+  header img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  h1 {
+    margin: 20px 0 10px;
+    font-size: 1.8em;
+    color: #222;
+  }
+  .prices {
+    max-width: 500px;
+    margin: 0 auto 20px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .price-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .price-item:last-child {
+    border-bottom: none;
+  }
+  .voucher-input {
+    margin: 20px auto;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  input[type="text"] {
+    padding: 12px;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  button {
+    padding: 12px;
+    font-size: 1em;
+    border: none;
+    background: #007bff;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+  footer {
+    margin-top: 30px;
+    font-size: 0.85em;
+    color: #777;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://imgur.com/MYVteCW.jpg" alt="Wi-Fi Banner">
+</header>
+
+<div class="voucher-input">
+  <input type="text" placeholder="Entre Code Ici..." id="voucherCode">
+  <button onclick="redeemVoucher()">Connect</button>
+</div>
+
+<footer>
+  © 2025 Your GLS Wi-Fi Service
+</footer>
+
+<script>
+function redeemVoucher() {
+  const code = document.getElementById('voucherCode').value.trim();
+  if (!code) {
+    alert('Entre votre code SVP!');
+    return;
+  }
+  // Here you'd normally validate the voucher code with your backend or hotspot system
+  alert('Voucher submitted: ' + code);
+}
+</script>
+
+</body>
+</html>
