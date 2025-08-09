@@ -69,14 +69,14 @@
 <body>
 
 <div class="container">
-  <h2>Login</h2>
+  <h2>GLS WIFI Login</h2>
   <select id="username">
     <option value="">Choisir Agent</option>
     <option value="Galois">Galois</option>
     <option value="Salem">Salem</option>
     <option value="Tryphose">Tryphose</option>
   </select>
-  <button id="loginBtn">GLS WIFI Login</button>
+  <button id="loginBtn">Login</button>
   <button id="getCodeBtn" disabled>Get Code</button>
   <div id="error" class="error"></div>
   <div id="result" class="result" style="display:none;"></div>
@@ -123,7 +123,7 @@
       // Get password for user from Firebase
       const snapshot = await db.ref("users_passwords/" + username).once("value");
       if (!snapshot.exists()) {
-        errorDiv.textContent = "User not found.";
+        errorDiv.textContent = "Agent non operationnel!.";
         return;
       }
       const storedData = snapshot.val();
