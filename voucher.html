@@ -24,8 +24,8 @@
   }
   .prices {
     max-width: 500px;
-    margin: 0 auto 20px;
-    padding: 10px;
+    margin: 15px auto;
+    padding: 15px;
     background: #fff;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -35,6 +35,7 @@
     justify-content: space-between;
     padding: 10px;
     border-bottom: 1px solid #eee;
+    font-size: 1.05em;
   }
   .price-item:last-child {
     border-bottom: none;
@@ -45,6 +46,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding: 0 10px;
   }
   input[type="text"] {
     padding: 12px;
@@ -62,14 +64,19 @@
     color: white;
     border-radius: 6px;
     cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
   }
   button:hover {
     background: #0056b3;
+  }
+  button:active {
+    transform: scale(0.97);
   }
   footer {
     margin-top: 30px;
     font-size: 0.85em;
     color: #777;
+    padding-bottom: 15px;
   }
 </style>
 </head>
@@ -79,8 +86,10 @@
   <img src="https://imgur.com/MYVteCW.jpg" alt="Wi-Fi Banner">
 </header>
 
+<h1>Welcome to GLS Wi-Fi</h1>
+
 <div class="voucher-input">
-  <input type="text" placeholder="Entre Code Ici..." id="voucherCode">
+  <input type="text" placeholder="Enter Code Here..." id="voucherCode">
   <button onclick="redeemVoucher()">Connect</button>
 </div>
 
@@ -92,10 +101,9 @@
 function redeemVoucher() {
   const code = document.getElementById('voucherCode').value.trim();
   if (!code) {
-    alert('Entre votre code SVP!');
+    alert('Please enter your voucher code!');
     return;
   }
-  // Here you'd normally validate the voucher code with your backend or hotspot system
   alert('Voucher submitted: ' + code);
 }
 </script>
