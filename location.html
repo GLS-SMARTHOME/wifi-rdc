@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Google Maps with Preset Pins & User Location</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { height: 100%; width: 100%; }
+    .custom-popup { font-family: Arial, sans-serif; font-size: 14px; }
+    .custom-popup .desc { color: red; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Google Maps API (replace YOUR_API_KEY with your key) -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjdnkFWOnh1u2cWf5RFURytU8Zk3fmOhk"></script>
+  <script>
+    const PRESET_LOCATIONS = [
+      { 
+        name: "WIFI 1", 
+        lat: 32.944596, 
+        lng: -97.024383, 
+        description: "Main corporate office in New York City" 
+      },
+      { 
+        name: "WIFI 2", 
+        lat: 32.716114, 
+        lng: -97.511902, 
+        description: "Iconic bridge connecting San Francisco to Marin County" 
+      },
+      { 
+        name: "WIFI 3", 
+        lat: 32.574444, 
+        lng: -97.317787, 
+        description: "Famous Chicago park, home of the Cloud Gate sculpture" 
+      },
+      { 
+        name: "WIFI 4", 
+        lat: 33.024007, 
+        lng: -97.315627, 
+        description: "Observation tower and landmark in Seattle" 
+      },
+    ];
+
+    let map;
+    let userMarker = null;
+    let lineToPin = null;
+    let lastUserLatLng = null;
+    let infowindow;
+    let allBounds; 
+    let firstFit = true; // only fit once
+
+    function initMap() {
+      // Default map
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 39.5, lng: -98.35 },
+        zoom: 4,
+      });
+
+      infowindow = new google.maps.InfoWindow();
+      allBounds = new google.maps.LatLngBounds();
+
+      // Add preset markers
+      PRESET_LOCATIONS.forEach(loc => {
+        const marker = new google.maps.Marker({
+          position: { lat: loc.lat, lng: loc.lng },
+          map,
+          title: loc.name
+        });
+
+        allBounds.extend(marker.getPosition());
+
+        marker.addListener("click", () => {
+          let content = `<div class="custom-popup">
+                           <b>${loc.name}</b><br>
+                           <span class="desc">${loc.description}</span><br>
+                           <i>Click again to measure distance</i>
+                         </div>`;
+
+          if (lastUserLatLng) {
+            const dist = haversineDistance(
+              lastUserLatLng.lat(),
+              lastUserLatLng.lng(),
+              loc.lat,
+              loc.lng
+            );
+            const distText = formatDistance(dist);
+
+            if (lineToPin) lineToPin.setMap(null);
+            lineToPin = new google.maps.Polyline({
+              path: [lastUserLatLng, { lat: loc.lat, lng: loc.lng }],
+              geodesic: true,
+              strokeColor: "red",
+              strokeOpacity: 1.0,
+              strokeWeight: 2,
+              map
+            });
+
+            content = `<div class="custom-popup">
+                         <b>${loc.name}</b><br>
+                         <span class="desc">${loc.description}</span><br>
+                         <b>Distance:</b> ${distText}
+                       </div>`;
+          }
+
+          infowindow.setContent(content);
+          infowindow.open(map, marker);
+        });
+      });
+
+      // Track user location continuously
+      if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(pos => {
+          const { latitude, longitude } = pos.coords;
+          lastUserLatLng = new google.maps.LatLng(latitude, longitude);
+
+          if (!userMarker) {
+            userMarker = new google.maps.Marker({
+              position: lastUserLatLng,
+              map,
+              title: "You are here",
+              icon: {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 8,
+                fillColor: "#3399ff",
+                fillOpacity: 1,
+                strokeWeight: 2,
+                strokeColor: "#007bff"
+              }
+            });
+
+            // ✅ Add user location to bounds & fit once
+            allBounds.extend(lastUserLatLng);
+            if (firstFit) {
+              map.fitBounds(allBounds);
+              firstFit = false;
+            }
+          } else {
+            userMarker.setPosition(lastUserLatLng);
+          }
+        }, () => {
+          alert("⚠️ Location unavailable");
+        });
+      }
+    }
+
+    // Haversine distance
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371000;
+      const toRad = deg => deg * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function formatDistance(meters) {
+      if (meters < 1000) return `${Math.round(meters)} m`;
+      return `${(meters/1000).toFixed(2)} km`;
+    }
+
+    // Initialize
+    window.onload = initMap;
+  </script>
+</body>
+</html>
