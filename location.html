@@ -57,17 +57,30 @@
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 39.5, lng: -98.35 },
         zoom: 4,
+        gestureHandling: "greedy"
       });
 
       infowindow = new google.maps.InfoWindow();
       allBounds = new google.maps.LatLngBounds();
 
-      // Add preset markers
+      // Add preset markers + 300m circle (150m radius)
       PRESET_LOCATIONS.forEach(loc => {
         const marker = new google.maps.Marker({
           position: { lat: loc.lat, lng: loc.lng },
           map,
           title: loc.name
+        });
+
+        // ✅ Add circle around each preset pin
+        new google.maps.Circle({
+          map,
+          radius: 300, // 150m radius = 300m diameter
+          fillColor: "#FF0000",
+          fillOpacity: 0.15,
+          strokeColor: "#FF0000",
+          strokeOpacity: 0.6,
+          strokeWeight: 1,
+          center: { lat: loc.lat, lng: loc.lng }
         });
 
         allBounds.extend(marker.getPosition());
@@ -101,7 +114,7 @@
             content = `<div class="custom-popup">
                          <b>${loc.name}</b><br>
                          <span class="desc">${loc.description}</span><br>
-                         <b>Distance:</b> ${distText}
+                         <b style="color:red">Distance:</b> ${distText}
                        </div>`;
           }
 
