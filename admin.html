@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin - Manage Codes</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button { padding: 8px; margin: 5px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #f2f2f2; }
+    .used { background: #ffe0e0; }
+  </style>
+</head>
+<body>
+
+  <h2>Code Management</h2>
+
+  <input type="text" id="codeInput" placeholder="Enter new code">
+  <button onclick="addCode()">Add Code</button>
+
+  <h3>Available Codes</h3>
+  <table>
+    <thead>
+      <tr><th>Code</th><th>Status</th><th>Action</th></tr>
+    </thead>
+    <tbody id="codesTable"></tbody>
+  </table>
+
+  <script>
+    // 🔧 Your Firebase config here
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Add new code
+    function addCode() {
+      const code = document.getElementById("codeInput").value.trim();
+      if (!code) return alert("Please enter a code");
+
+      db.ref("codes").push({ value: code, used: false });
+      document.getElementById("codeInput").value = "";
+    }
+
+    // Render codes in table
+    const codesTable = document.getElementById("codesTable");
+    db.ref("codes").on("value", snapshot => {
+      codesTable.innerHTML = "";
+      snapshot.forEach(child => {
+        const data = child.val();
+        const row = document.createElement("tr");
+        if (data.used) row.classList.add("used");
+
+        row.innerHTML = `
+          <td>${data.value}</td>
+          <td>${data.used ? "USED" : "AVAILABLE"}</td>
+          <td>
+            <button onclick="deleteCode('${child.key}')">Delete</button>
+          </td>
+        `;
+        codesTable.appendChild(row);
+      });
+    });
+
+    // Delete a code
+    function deleteCode(key) {
+      if (confirm("Delete this code?")) {
+        db.ref("codes/" + key).remove();
+      }
+    }
+  </script>
+</body>
+</html>
