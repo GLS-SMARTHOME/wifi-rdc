@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RTDB Delete Example</title>
+</head>
+<body>
+
+<h2>Devices List (Click to Delete)</h2>
+<ul id="deviceList"></ul>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // 🔹 Your Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
+  authDomain: "xoxo-store.firebaseapp.com",
+  databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+  projectId: "xoxo-store",
+  storageBucket: "xoxo-store.firebasestorage.app",
+  messagingSenderId: "667290233046",
+  appId: "1:667290233046:web:dbbc9130ff38b0900f8177",
+  measurementId: "G-XMJVCK8KMD"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  const devicesRef = ref(db, "devices");
+
+  // 🔹 Load and display list
+  onValue(devicesRef, (snapshot) => {
+    const list = document.getElementById("deviceList");
+    list.innerHTML = "";
+
+    snapshot.forEach((childSnapshot) => {
+      const key = childSnapshot.key;
+      const data = childSnapshot.val();
+
+      const li = document.createElement("li");
+      li.textContent = key + " → " + data.name;
+
+      // 🔥 Click event
+      li.onclick = () => {
+        const confirmDelete = confirm(`Delete ${data.name}?`);
+        if (confirmDelete) {
+          const itemRef = ref(db, "devices/" + key);
+          remove(itemRef)
+            .then(() => {
+              alert("Deleted successfully");
+            })
+            .catch((error) => {
+              alert("Error: " + error);
+            });
+        }
+      };
+
+      list.appendChild(li);
+    });
+  });
+
+</script>
+
+</body>
+</html>
