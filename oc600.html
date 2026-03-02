@@ -1,60 +1,74 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RTDB Delete Example</title>
+  <title>wifi-code-clients</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    ul {
+      padding: 0;
+    }
+    li {
+      list-style: none;
+      padding: 10px;
+      margin: 6px 0;
+      background: #f0f0f0;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    li:hover {
+      background: #ffd6d6;
+    }
+  </style>
 </head>
 <body>
 
-<h2>Devices List (Click to Delete)</h2>
-<ul id="deviceList"></ul>
+<h2>CODE ACCES WIFI</h2>
+<h4><ul id="deviceList"></ul></h4>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  // 🔹 Your Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
-  authDomain: "xoxo-store.firebaseapp.com",
-  databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
-  projectId: "xoxo-store",
-  storageBucket: "xoxo-store.firebasestorage.app",
-  messagingSenderId: "667290233046",
-  appId: "1:667290233046:web:dbbc9130ff38b0900f8177",
-  measurementId: "G-XMJVCK8KMD"
-};
+    apiKey: "YOUR_API_KEY",
+    authDomain: "xoxo-store.firebaseapp.com",
+    databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+    projectId: "xoxo-store",
+    storageBucket: "xoxo-store.firebasestorage.app",
+    messagingSenderId: "667290233046",
+    appId: "1:667290233046:web:dbbc9130ff38b0900f8177"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
   const devicesRef = ref(db, "devices");
 
-  // 🔹 Load and display list
   onValue(devicesRef, (snapshot) => {
     const list = document.getElementById("deviceList");
     list.innerHTML = "";
 
     snapshot.forEach((childSnapshot) => {
       const key = childSnapshot.key;
-      const data = childSnapshot.val();
 
       const li = document.createElement("li");
-      li.textContent = key + " → " + data.name;
+      li.textContent = key;
 
-      // 🔥 Click event
-      li.onclick = () => {
-        const confirmDelete = confirm(`Delete ${data.name}?`);
+      // 🔥 Click to delete
+      li.addEventListener("click", () => {
+        const confirmDelete = confirm(`Delete ${key}?`);
+        
         if (confirmDelete) {
-          const itemRef = ref(db, "devices/" + key);
-          remove(itemRef)
+          remove(ref(db, "devices/" + key))
             .then(() => {
               alert("Deleted successfully");
             })
             .catch((error) => {
-              alert("Error: " + error);
+              alert("Error: " + error.message);
             });
         }
-      };
+      });
 
       list.appendChild(li);
     });
