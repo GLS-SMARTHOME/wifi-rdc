@@ -1,65 +1,124 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>RTDB Delete Example</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Large Device Manager (No-Auth)</title>
+  <style>
+    /* 🚀 Extra Large UI Styles */
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      padding: 40px; 
+      font-size: 26px; /* Large base text */
+      background-color: #f0f2f5;
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h2 { font-size: 48px; color: #1c1e21; margin-bottom: 40px; text-align: center; }
+
+    ul { list-style: none; padding: 0; }
+
+    li { 
+      background: white;
+      padding: 35px; 
+      margin-bottom: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      cursor: pointer; 
+      transition: all 0.2s ease-in-out;
+      font-size: 32px; /* 🚀 High visibility */
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 3px solid transparent;
+    }
+    
+    li:hover { 
+      border-color: #ff5252; 
+      background: #fff8f8;
+      transform: scale(1.02);
+    }
+
+    /* ⏳ Loading Feedback */
+    .deleting { 
+      opacity: 0.4; 
+      pointer-events: none; 
+      background: #eee !important;
+      border-color: #999 !important;
+    }
+
+    .delete-hint { font-size: 18px; color: #888; text-align: center; margin-bottom: 20px; }
+  </style>
 </head>
 <body>
 
-<h2>Devices List (Click to Delete)</h2>
+<h2>📱 Device Inventory</h2>
+<p class="delete-hint">Tap any device below to remove it permanently.</p>
 <ul id="deviceList"></ul>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  // Using Firebase v10.12.0 SDK
+  import { initializeApp } from "https://www.gstatic.com";
+  import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com";
 
-  // 🔹 Your Firebase config
+  // 🔹 Replace with your actual Firebase config if different
   const firebaseConfig = {
-  apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
-  authDomain: "xoxo-store.firebaseapp.com",
-  databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
-  projectId: "xoxo-store",
-  storageBucket: "xoxo-store.firebasestorage.app",
-  messagingSenderId: "667290233046",
-  appId: "1:667290233046:web:dbbc9130ff38b0900f8177",
-  measurementId: "G-XMJVCK8KMD"
-};
+    apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
+    authDomain: "xoxo-store.firebaseapp.com",
+    databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+    projectId: "xoxo-store",
+    storageBucket: "xoxo-store.firebasestorage.app",
+    messagingSenderId: "667290233046",
+    appId: "1:667290233046:web:dbbc9130ff38b0900f8177"
+  };
 
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-
   const devicesRef = ref(db, "devices");
 
-  // 🔹 Load and display list
+  // 🔹 Real-time Data Listener
   onValue(devicesRef, (snapshot) => {
     const list = document.getElementById("deviceList");
     list.innerHTML = "";
+
+    if (!snapshot.exists()) {
+      list.innerHTML = "<p style='text-align:center; color:#999;'>No devices found.</p>";
+      return;
+    }
 
     snapshot.forEach((childSnapshot) => {
       const key = childSnapshot.key;
       const data = childSnapshot.val();
 
       const li = document.createElement("li");
-      li.textContent = key + " → " + data.name;
+      li.innerHTML = `<span>${data.name}</span> <span style="font-size:40px;">🗑️</span>`;
 
-      // 🔥 Click event
-      li.onclick = () => {
-        const confirmDelete = confirm(`Delete ${data.name}?`);
-        if (confirmDelete) {
-          const itemRef = ref(db, "devices/" + key);
-          remove(itemRef)
-            .then(() => {
-              alert("Deleted successfully");
-            })
-            .catch((error) => {
-              alert("Error: " + error);
-            });
+      // 🔥 Delete Action with UI Feedback
+      li.onclick = async () => {
+        const confirmMsg = `Delete "${data.name}"? This cannot be undone.`;
+        if (!confirm(confirmMsg)) return;
+
+        // Visual Feedback: Start loading state
+        li.classList.add("deleting");
+        const originalContent = li.innerHTML;
+        li.innerHTML = "<span>⌛ Deleting from database...</span>";
+
+        try {
+          // Standard Firebase remove call
+          await remove(ref(db, `devices/${key}`));
+        } catch (error) {
+          // Reset UI if there is an error
+          alert("Error: " + error.message);
+          li.classList.remove("deleting");
+          li.innerHTML = originalContent;
         }
       };
 
       list.appendChild(li);
     });
   });
-
 </script>
 
 </body>
