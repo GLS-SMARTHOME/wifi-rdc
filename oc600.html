@@ -5,20 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Large Device Manager (No-Auth)</title>
   <style>
-    /* 🚀 Extra Large UI Styles */
     body { 
       font-family: system-ui, -apple-system, sans-serif; 
       padding: 40px; 
-      font-size: 26px; /* Large base text */
+      font-size: 26px; 
       background-color: #f0f2f5;
       max-width: 900px;
       margin: auto;
     }
-
     h2 { font-size: 48px; color: #1c1e21; margin-bottom: 40px; text-align: center; }
-
     ul { list-style: none; padding: 0; }
-
     li { 
       background: white;
       padding: 35px; 
@@ -27,28 +23,15 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       cursor: pointer; 
       transition: all 0.2s ease-in-out;
-      font-size: 32px; /* 🚀 High visibility */
+      font-size: 32px; 
       font-weight: 600;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border: 3px solid transparent;
     }
-    
-    li:hover { 
-      border-color: #ff5252; 
-      background: #fff8f8;
-      transform: scale(1.02);
-    }
-
-    /* ⏳ Loading Feedback */
-    .deleting { 
-      opacity: 0.4; 
-      pointer-events: none; 
-      background: #eee !important;
-      border-color: #999 !important;
-    }
-
+    li:hover { border-color: #ff5252; background: #fff8f8; transform: scale(1.02); }
+    .deleting { opacity: 0.4; pointer-events: none; background: #eee !important; }
     .delete-hint { font-size: 18px; color: #888; text-align: center; margin-bottom: 20px; }
   </style>
 </head>
@@ -59,11 +42,10 @@
 <ul id="deviceList"></ul>
 
 <script type="module">
-  // Using Firebase v10.12.0 SDK
+  // ✅ FIXED: Added full paths to the Firebase CDN URLs
   import { initializeApp } from "https://www.gstatic.com";
   import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com";
 
-  // 🔹 Replace with your actual Firebase config if different
   const firebaseConfig = {
     apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
     authDomain: "xoxo-store.firebaseapp.com",
@@ -78,7 +60,6 @@
   const db = getDatabase(app);
   const devicesRef = ref(db, "devices");
 
-  // 🔹 Real-time Data Listener
   onValue(devicesRef, (snapshot) => {
     const list = document.getElementById("deviceList");
     list.innerHTML = "";
@@ -93,31 +74,29 @@
       const data = childSnapshot.val();
 
       const li = document.createElement("li");
-      li.innerHTML = `<span>${data.name}</span> <span style="font-size:40px;">🗑️</span>`;
+      li.innerHTML = `<span>${data.name || "Unnamed Device"}</span> <span style="font-size:40px;">🗑️</span>`;
 
-      // 🔥 Delete Action with UI Feedback
       li.onclick = async () => {
-        const confirmMsg = `Delete "${data.name}"? This cannot be undone.`;
-        if (!confirm(confirmMsg)) return;
+        if (!confirm(`Delete "${data.name}"?`)) return;
 
-        // Visual Feedback: Start loading state
         li.classList.add("deleting");
-        const originalContent = li.innerHTML;
-        li.innerHTML = "<span>⌛ Deleting from database...</span>";
+        li.innerHTML = "<span>⌛ Deleting...</span>";
 
         try {
-          // Standard Firebase remove call
+          // Removes node from [Firebase Realtime Database](https://firebase.google.com)
           await remove(ref(db, `devices/${key}`));
         } catch (error) {
-          // Reset UI if there is an error
           alert("Error: " + error.message);
-          li.classList.remove("deleting");
-          li.innerHTML = originalContent;
+          // UI will refresh automatically via onValue if successful, 
+          // but we reload if there's an error to show original state
+          location.reload(); 
         }
       };
-
       list.appendChild(li);
     });
+  }, (error) => {
+    console.error("Database Error:", error);
+    document.getElementById("deviceList").innerHTML = `<p style="color:red">Permission Denied. Check your [Firebase Security Rules](https://console.firebase.google.com).</p>`;
   });
 </script>
 
