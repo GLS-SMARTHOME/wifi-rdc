@@ -1,124 +1,144 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Panier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter un appareil</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 20px; 
+      margin: 0;
+      background-color: #f9f9f9;
     }
-    h1 {
-      color: #4CAF50;
+    h2 { 
+      margin-top: 20px; 
+      font-size: 1.5em;
       text-align: center;
-      margin-bottom: 30px;
     }
-    .cart-item {
-      display: flex;
-      align-items: center;
-      background: white;
-      margin-bottom: 15px;
-      padding: 15px;
+    input, button {
+      padding: 12px;
+      margin: 10px 0;
+      width: 100%;
+      max-width: 400px;
+      font-size: 16px;
+      box-sizing: border-box;
       border-radius: 8px;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-    }
-    .cart-item img {
-      width: 80px;
-      height: 60px;
-      object-fit: contain;
-      margin-right: 20px;
-      border-radius: 5px;
-    }
-    .item-info {
-      flex-grow: 1;
-    }
-    .item-name {
-      font-weight: bold;
-      margin-bottom: 5px;
-      font-size: 1.1em;
-      color: #222;
-    }
-    .item-price {
-      color: #4CAF50;
-      font-weight: bold;
-      font-size: 1em;
-    }
-    .empty-msg {
-      margin-top: 50px;
-      text-align: center;
-      color: #777;
-      font-style: italic;
-      font-size: 1.2em;
-    }
-    a.back-link {
+      border: 1px solid #ccc;
       display: block;
-      margin-top: 30px;
-      text-align: center;
-      color: #4CAF50;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 1.1em;
+      margin-left: auto;
+      margin-right: auto;
     }
-    a.back-link:hover {
-      color: #388e3c;
+    button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+    }
+    button:hover {
+      background-color: #45a049;
+      cursor: pointer;
+    }
+    a {
+      text-align: center;
+      display: block;
+      margin-top: 20px;
+      color: #333;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    #uploadSection {
+      display: none;
     }
   </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <h1>Votre Panier</h1>
-  <div id="cartContainer" role="list"></div>
-  <a href="index.html" class="back-link" aria-label="Retour à la boutique">← Retour à la boutique</a>
 
-  <script>
-    // Firebase Config (same as index.html)
+  <!-- Section d'accès -->
+  <div id="accessSection">
+    <h2>Accès requis</h2>
+    <input type="password" id="accessCode" placeholder="Entrez le code d'accès" />
+    <br>
+    <button id="checkAccessBtn">Valider</button>
+  </div>
+
+  <!-- Section d'ajout d'appareil -->
+  <div id="uploadSection">
+    <h2>Ajouter un nouvel appareil</h2>
+    <input type="text" id="deviceCode" placeholder="Entrez le code de l'appareil" />
+    <br>
+    <button id="uploadBtn">Téléverser</button>
+    <a href="index.html">⬅ Retour à la liste</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
     const firebaseConfig = {
-  apiKey: "AIzaSyCbUMHr-1pWWlhlFuyG8E4AdfOYn5tWIhM",
-  authDomain: "food-details-554cf.firebaseapp.com",
-  databaseURL: "https://food-details-554cf-default-rtdb.firebaseio.com",
-  projectId: "food-details-554cf",
-  storageBucket: "food-details-554cf.firebasestorage.app",
-  messagingSenderId: "617865162295",
-  appId: "1:617865162295:web:e8e44fc0c45146ae2819b2",
-  measurementId: "G-VGYFY56WSV"
+      apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
+      authDomain: "xoxo-store.firebaseapp.com",
+      databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+      projectId: "xoxo-store",
+      storageBucket: "xoxo-store.firebasestorage.app",
+      messagingSenderId: "667290233046",
+      appId: "1:667290233046:web:dbbc9130ff38b0900f8177"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const cartContainer = document.getElementById('cartContainer');
+    const accessInput = document.getElementById("accessCode");
+    const checkBtn = document.getElementById("checkAccessBtn");
+    const uploadSection = document.getElementById("uploadSection");
+    const accessSection = document.getElementById("accessSection");
 
-      db.collection('cart').orderBy('addedAt', 'desc').get()
-      .then(snapshot => {
-        if (snapshot.empty) {
-          cartContainer.innerHTML = `<div class="empty-msg">Votre panier est vide.</div>`;
-          return;
+    // Vérifier le code d'accès
+    checkBtn.addEventListener("click", async () => {
+      const enteredCode = accessInput.value.trim();
+      if (!enteredCode) {
+        alert("Veuillez entrer le code d'accès.");
+        return;
+      }
+
+      try {
+        const snapshot = await get(ref(db, "code/wifi-adm"));
+        if (snapshot.exists() && String(snapshot.val()) === enteredCode) {
+          alert("✅ Accès autorisé !");
+          accessSection.style.display = "none";
+          uploadSection.style.display = "block";
+        } else {
+          alert("❌ Accès refusé !");
         }
+      } catch (error) {
+        alert("Erreur lors de la vérification du code : " + error.message);
+      }
+    });
 
-        snapshot.forEach(doc => {
-          const item = doc.data();
-          const itemHtml = `
-            <div class="cart-item" role="listitem">
-              <img src="${item.image}" alt="${item.name}" />
-              <div class="item-info">
-                <div class="item-name">${item.name}</div>
-                <div class="item-price">${item.price.toFixed(2)} €</div>
-              </div>
-            </div>
-          `;
-          cartContainer.insertAdjacentHTML('beforeend', itemHtml);
-        });
-      })
-      .catch(err => {
-        cartContainer.innerHTML = `<div class="empty-msg">Erreur de chargement du panier: ${err.message}</div>`;
-      });
+    // Téléverser le code de l'appareil
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const code = document.getElementById("deviceCode").value.trim();
+      if (!code) {
+        alert("Veuillez entrer le code de l'appareil.");
+        return;
+      }
+
+      const deviceRef = ref(db, "devices/" + code);
+
+      try {
+        const snapshot = await get(deviceRef);
+        if (snapshot.exists()) {
+          alert("❌ Ce code d'appareil existe déjà !");
+        } else {
+          await set(deviceRef, true);
+          alert("✅ Appareil ajouté avec succès !");
+          document.getElementById("deviceCode").value = "";
+        }
+      } catch (error) {
+        alert("Erreur lors du téléversement : " + error.message);
+      }
     });
   </script>
+
 </body>
 </html>
