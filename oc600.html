@@ -1,27 +1,87 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <!-- Crucial for mobile scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Wi-Fi Access Page</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    #accessSection, #deviceSection { max-width: 400px; margin: auto; }
-    input { width: 100%; padding: 10px; margin: 10px 0; font-size: 16px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    ul { padding: 0; }
-    li { list-style: none; padding: 10px; margin: 6px 0; background: #f0f0f0; cursor: pointer; transition: 0.2s; }
-    li:hover { background: #ffd6d6; }
+    /* Mobile-first resets */
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      padding: 20px; 
+      background-color: #f9f9fb;
+      color: #333;
+      line-height: 1.5;
+    }
+    #accessSection, #deviceSection { 
+      max-width: 100%; 
+      margin: 20px auto; 
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    h2 { margin-top: 0; font-size: 1.4rem; text-align: center; }
+    
+    /* Larger touch targets for mobile fingers */
+    input { 
+      width: 100%; 
+      padding: 14px; 
+      margin: 15px 0; 
+      font-size: 16px; /* Prevents iOS auto-zoom on focus */
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button { 
+      width: 100%; 
+      padding: 14px; 
+      font-size: 16px; 
+      font-weight: bold;
+      background-color: #007AFF; 
+      color: white; 
+      border: none; 
+      border-radius: 8px;
+      cursor: pointer; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { opacity: 0.8; }
+
+    ul { padding: 0; margin-top: 20px; }
+    li { 
+      list-style: none; 
+      padding: 16px; 
+      margin-bottom: 10px; 
+      background: #f1f1f7; 
+      border-radius: 8px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    /* Add a visual cue that it is deletable */
+    li::after {
+      content: '✕';
+      color: #ff3b30;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    li:active { background: #ffd6d6; }
   </style>
 </head>
 <body>
 
 <div id="accessSection">
-  <h2>Enter Wi-Fi Access Code</h2>
-  <input type="text" id="accessInput" placeholder="Access Code">
-  <button id="checkBtn">Enter</button>
+  <h2>GESTION WIFI </h2>
+  <input type="tel" id="accessInput" placeholder="Enter Access Code" pattern="[0-9]*">
+  <button id="checkBtn">Unlock Access</button>
 </div>
 
 <div id="deviceSection" style="display:none;">
-  <h2>Device List</h2>
+  <h2>Active Devices</h2>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Tap a device to remove it.</p>
   <ul id="deviceList"></ul>
 </div>
 
@@ -48,62 +108,46 @@ const accessInput = document.getElementById("accessInput");
 const checkBtn = document.getElementById("checkBtn");
 const deviceList = document.getElementById("deviceList");
 
-// Access code verification
 checkBtn.addEventListener("click", async () => {
   const enteredCode = accessInput.value.trim();
   if (!enteredCode) {
-    alert("Please enter the access code.");
+    alert("Please entrer code access.");
     return;
   }
 
   try {
     const snapshot = await get(ref(db, "code/wifi-user"));
     if (snapshot.exists()) {
-      const storedCode = snapshot.val(); // numeric 1990
+      const storedCode = snapshot.val();
       if (String(storedCode) === enteredCode) {
-        alert("✅ Access granted!");
         accessSection.style.display = "none";
         deviceSection.style.display = "block";
         loadDevices();
       } else {
         alert("❌ Access denied!");
       }
-    } else {
-      alert("❌ No access code found!");
     }
   } catch (error) {
-    alert("Error checking code: " + error.message);
+    alert("Error: " + error.message);
   }
 });
 
-// Load devices and add click-to-delete functionality
 function loadDevices() {
-  const devicesRef = ref(db, "devices");
-  onValue(devicesRef, snapshot => {
-    deviceList.innerHTML = ""; // clear previous list
+  onValue(ref(db, "devices"), snapshot => {
+    deviceList.innerHTML = "";
     snapshot.forEach(child => {
       const key = child.key;
       const li = document.createElement("li");
       li.textContent = key;
-
-      // Click to delete with confirmation
-      li.addEventListener("click", async () => {
-        const confirmDelete = confirm(`Are you sure you want to delete "${key}"?`);
-        if (confirmDelete) {
-          try {
-            await remove(ref(db, "devices/" + key));
-            alert(`✅ "${key}" deleted successfully!`);
-          } catch (err) {
-            alert("Error deleting device: " + err.message);
-          }
+      li.onclick = async () => {
+        if (confirm(`Delete "${key}"?`)) {
+          await remove(ref(db, "devices/" + key));
         }
-      });
-
+      };
       deviceList.appendChild(li);
     });
   });
 }
 </script>
-
 </body>
 </html>
