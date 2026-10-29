@@ -9,69 +9,43 @@
     #map { height: 100%; width: 100%; }
     .custom-popup { font-family: Arial, sans-serif; font-size: 14px; }
     .custom-popup .desc { color: red; }
+    
+    /* Styled action button link */
+    .popup-contact-btn {
+      display: block;
+      background-color: #007bff;
+      color: white !important;
+      text-decoration: none;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 13px;
+      margin-top: 8px;
+      transition: background-color 0.2s;
+    }
+    .popup-contact-btn:hover {
+      background-color: #0056b3;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Google Maps API (replace YOUR_API_KEY with your key) -->
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjdnkFWOnh1u2cWf5RFURytU8Zk3fmOhk"></script>
+  <script src="https://googleapis.com"></script>
   <script>
+    // Configured with unique site parameters for your single contact page form
     const PRESET_LOCATIONS = [
-      { 
-        name: "WIFI SUPER LEMBA", 
-        lat: -4.379812, 
-        lng: 15.335715, 
-        description: "DISPO SEPT 2025" 
-      },
-      { 
-        name: "WIFI LEMBA TERMINUS", 
-        lat: -4.387529, 
-        lng: 15.330413, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI MADAYILA", 
-        lat: -4.423355, 
-        lng: 15.396486, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI FERBOIS", 
-        lat: -4.417984, 
-        lng: 15.399272, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI MARCHE PASCAL", 
-        lat: -4.400686, 
-        lng: 15.395010, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI MASINA BKTF", 
-        lat: -4.396282, 
-        lng: 15.393533, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI MARCHE LIBERTE", 
-        lat: -4.392174,
-        lng: 15.384417, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI CATHEDRALE", 
-        lat: -4.323904,
-        lng: 15.295038, 
-        description: "DISPO JANV 2026" 
-      },
-      { 
-        name: "WIFI PONT MATETE", 
-        lat: -4.382317, 
-        lng: 15.352088, 
-        description: "DISPO JANV 2026" 
-      },
+      { name: "WIFI SUPER LEMBA", lat: -4.379812, lng: 15.335715, description: "DISPO SEPT 2025", siteId: "super-lemba" },
+      { name: "WIFI LEMBA TERMINUS", lat: -4.387529, lng: 15.330413, description: "DISPO JANV 2026", siteId: "lemba-terminus" },
+      { name: "WIFI MADAYILA", lat: -4.423355, lng: 15.396486, description: "DISPO JANV 2026", siteId: "madayila" },
+      { name: "WIFI FERBOIS", lat: -4.417984, lng: 15.399272, description: "DISPO JANV 2026", siteId: "ferbois" },
+      { name: "WIFI MARCHE PASCAL", lat: -4.400686, lng: 15.395010, description: "DISPO JANV 2026", siteId: "marche-pascal" },
+      { name: "WIFI MASINA BKTF", lat: -4.396282, lng: 15.393533, description: "DISPO JANV 2026", siteId: "masina-bktf" },
+      { name: "WIFI MARCHE LIBERTE", lat: -4.392174, lng: 15.384417, description: "DISPO JANV 2026", siteId: "marche-liberte" },
+      { name: "WIFI CATHEDRALE", lat: -4.323904, lng: 15.295038, description: "DISPO JANV 2026", siteId: "cathedrale" },
+      { name: "WIFI PONT MATETE", lat: -4.382317, lng: 15.352088, description: "DISPO JANV 2026", siteId: "pont-matete" },
     ];
 
     let map;
@@ -83,7 +57,7 @@
     let firstFit = true; // only fit once
 
     function initMap() {
-      // Default map
+      // Default map setup
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 39.5, lng: -98.35 },
         zoom: 4,
@@ -93,7 +67,7 @@
       infowindow = new google.maps.InfoWindow();
       allBounds = new google.maps.LatLngBounds();
 
-      // Add preset markers + 300m circle (150m radius)
+      // Add preset markers + strict 150m radius circles
       PRESET_LOCATIONS.forEach(loc => {
         const marker = new google.maps.Marker({
           position: { lat: loc.lat, lng: loc.lng },
@@ -101,10 +75,10 @@
           title: loc.name
         });
 
-        // ✅ Add circle around each preset pin
+        // ✅ Strictly 150m boundary ring
         new google.maps.Circle({
           map,
-          radius: 300, // 150m radius = 300m diameter
+          radius: 150, 
           fillColor: "#FF0000",
           fillOpacity: 0.15,
           strokeColor: "#FF0000",
@@ -116,10 +90,15 @@
         allBounds.extend(marker.getPosition());
 
         marker.addListener("click", () => {
+          // Generates a unique parameter endpoint string like /contact?site=super-lemba
+          const targetUrl = `/contact?site=${loc.siteId}`;
+
           let content = `<div class="custom-popup">
+                           <!-- -->
                            <b>${loc.name}</b><br>
                            <span class="desc">${loc.description}</span><br>
-                           <i>Click again to measure distance</i>
+                           <i>Click again to measure distance</i><br>
+                           <a href="${targetUrl}" class="popup-contact-btn">Contact Location</a>
                          </div>`;
 
           if (lastUserLatLng) {
@@ -142,9 +121,11 @@
             });
 
             content = `<div class="custom-popup">
+                         <!-- -->
                          <b>${loc.name}</b><br>
                          <span class="desc">${loc.description}</span><br>
-                         <b style="color:red">Distance:</b> ${distText}
+                         <b style="color:red">Distance:</b> ${distText}<br>
+                         <a href="${targetUrl}" class="popup-contact-btn">Contact Location</a>
                        </div>`;
           }
 
@@ -153,7 +134,7 @@
         });
       });
 
-      // Track user location continuously
+      // Track user location continuously via GPS
       if (navigator.geolocation) {
         navigator.geolocation.watchPosition(pos => {
           const { latitude, longitude } = pos.coords;
@@ -174,7 +155,6 @@
               }
             });
 
-            // ✅ Add user location to bounds & fit once
             allBounds.extend(lastUserLatLng);
             if (firstFit) {
               map.fitBounds(allBounds);
@@ -189,7 +169,7 @@
       }
     }
 
-    // Haversine distance
+    // Haversine formula computation engine
     function haversineDistance(lat1, lon1, lat2, lon2) {
       const R = 6371000;
       const toRad = deg => deg * Math.PI / 180;
@@ -208,7 +188,7 @@
       return `${(meters/1000).toFixed(2)} km`;
     }
 
-    // Initialize
+    // Initialize application layout window timeline
     window.onload = initMap;
   </script>
 </body>
