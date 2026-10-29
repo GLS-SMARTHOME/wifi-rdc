@@ -5,12 +5,47 @@
   <title>Google Maps with Preset Pins & User Location</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html, body { height: 100%; margin: 0; }
-    #map { height: 100%; width: 100%; }
+    html, body { height: 100%; margin: 0; font-family: Arial, sans-serif; }
+    
+    /* Map is hidden by default until location authorization is granted */
+    #map { height: 100%; width: 100%; display: none; }
+    
+    /* Full screen modal blocker overlay for permissions styling */
+    #permission-gate {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .gate-card { max-width: 400px; }
+    .gate-icon { font-size: 48px; margin-bottom: 15px; }
+    .gate-title { font-size: 22px; font-weight: bold; color: #333; margin-bottom: 10px; }
+    .gate-text { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 20px; }
+    
+    /* Retry layout action element */
+    .retry-btn {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .retry-btn:hover { background-color: #218838; }
+
+    /* Map popup interface tracking rules */
     .custom-popup { font-family: Arial, sans-serif; font-size: 14px; }
     .custom-popup .desc { color: red; }
-    
-    /* Styled action button link */
     .popup-contact-btn {
       display: block;
       background-color: #007bff;
@@ -24,18 +59,28 @@
       margin-top: 8px;
       transition: background-color 0.2s;
     }
-    .popup-contact-btn:hover {
-      background-color: #0056b3;
-    }
+    .popup-contact-btn:hover { background-color: #0056b3; }
   </style>
 </head>
 <body>
+
+  <!-- Full screen gate overlay shown during check or fallback blocks -->
+  <div id="permission-gate">
+    <div class="gate-card">
+      <div class="gate-icon" id="gate-icon">🛰️</div>
+      <div class="gate-title" id="gate-title">Checking Location Access</div>
+      <div class="gate-text" id="gate-text">Please allow access to your device location when prompted so we can compute distances to your nearest hotspot endpoints.</div>
+      <button class="retry-btn" id="retry-button" onclick="checkLocationMandatory()" style="display: none;">Try Again</button>
+    </div>
+  </div>
+
+  <!-- Hidden map view element node wrapper -->
   <div id="map"></div>
 
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDjdnkFWOnh1u2cWf5RFURytU8Zk3fmOhk"></script>
   <script src="https://googleapis.com"></script>
+  
   <script>
-    // Configured with unique site parameters for your single contact page form
     const PRESET_LOCATIONS = [
       { name: "WIFI SUPER LEMBA", lat: -4.379812, lng: 15.335715, description: "DISPO SEPT 2025", siteId: "super-lemba" },
       { name: "WIFI LEMBA TERMINUS", lat: -4.387529, lng: 15.330413, description: "DISPO JANV 2026", siteId: "lemba-terminus" },
@@ -54,20 +99,56 @@
     let lastUserLatLng = null;
     let infowindow;
     let allBounds; 
-    let firstFit = true; // only fit once
+    let firstFit = true; 
 
-    function initMap() {
-      // Default map setup
+    // ✅ GATEWAY CONTROL: Intercept loading pipeline to audit browser parameters first
+    function checkLocationMandatory() {
+      // Hide error loops / show loader during execution refresh states
+      document.getElementById("gate-icon").innerText = "🛰️";
+      document.getElementById("gate-title").innerText = "Checking Location Access";
+      document.getElementById("gate-text").innerText = "Please allow access to your device location when prompted so we can compute distances to your nearest hotspot endpoints.";
+      document.getElementById("retry-button").style.display = "none";
+
+      if (navigator.geolocation) {
+        // Query an immediate target location snapshot to verify authorization clearance
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            // Success: Remove full screen barrier shield and spin map rendering track
+            document.getElementById("permission-gate").style.display = "none";
+            document.getElementById("map").style.display = "block";
+            
+            // Handle payload initialization mapping safely
+            initMap(pos.coords.latitude, pos.coords.longitude);
+          },
+          (error) => {
+            // Failure / User Denied Permission: Intercept loop and force warning card text updates
+            document.getElementById("gate-icon").innerText = "⚠️";
+            document.getElementById("gate-title").innerText = "Location Access Denied";
+            document.getElementById("gate-text").innerText = "We need your location to measure distance tracking profiles down to the Wi-Fi areas. Please update your browser site settings panel permissions to continue.";
+            document.getElementById("retry-button").style.display = "inline-block";
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      } else {
+        document.getElementById("gate-title").innerText = "Not Supported";
+        document.getElementById("gate-text").innerText = "Your current browser does not support geolocation location auditing metrics layers.";
+      }
+    }
+
+    function initMap(initialLat, initialLng) {
+      lastUserLatLng = new google.maps.LatLng(initialLat, initialLng);
+
+      // Render verified map instance targets layout cleanly
       map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 39.5, lng: -98.35 },
-        zoom: 4,
+        center: lastUserLatLng,
+        zoom: 14,
         gestureHandling: "greedy"
       });
 
       infowindow = new google.maps.InfoWindow();
       allBounds = new google.maps.LatLngBounds();
 
-      // Add preset markers + strict 150m radius circles
+      // Add markers and configuration boundary track parameters
       PRESET_LOCATIONS.forEach(loc => {
         const marker = new google.maps.Marker({
           position: { lat: loc.lat, lng: loc.lng },
@@ -75,7 +156,6 @@
           title: loc.name
         });
 
-        // ✅ Strictly 150m boundary ring
         new google.maps.Circle({
           map,
           radius: 150, 
@@ -90,11 +170,9 @@
         allBounds.extend(marker.getPosition());
 
         marker.addListener("click", () => {
-          // Generates a unique parameter endpoint string like /contact?site=super-lemba
           const targetUrl = `/contact?site=${loc.siteId}`;
 
           let content = `<div class="custom-popup">
-                           <!-- -->
                            <b>${loc.name}</b><br>
                            <span class="desc">${loc.description}</span><br>
                            <i>Click again to measure distance</i><br>
@@ -121,7 +199,6 @@
             });
 
             content = `<div class="custom-popup">
-                         <!-- -->
                          <b>${loc.name}</b><br>
                          <span class="desc">${loc.description}</span><br>
                          <b style="color:red">Distance:</b> ${distText}<br>
@@ -134,44 +211,38 @@
         });
       });
 
-      // Track user location continuously via GPS
-      if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(pos => {
-          const { latitude, longitude } = pos.coords;
-          lastUserLatLng = new google.maps.LatLng(latitude, longitude);
+      // Add user indicator pin natively using pre-calculated coordinates
+      userMarker = new google.maps.Marker({
+        position: lastUserLatLng,
+        map,
+        title: "You are here",
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#3399ff",
+          fillOpacity: 1,
+          strokeWeight: 2,
+          strokeColor: "#007bff"
+        }
+      });
 
-          if (!userMarker) {
-            userMarker = new google.maps.Marker({
-              position: lastUserLatLng,
-              map,
-              title: "You are here",
-              icon: {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 8,
-                fillColor: "#3399ff",
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: "#007bff"
-              }
-            });
+      allBounds.extend(lastUserLatLng);
+      map.fitBounds(allBounds);
 
-            allBounds.extend(lastUserLatLng);
-            if (firstFit) {
-              map.fitBounds(allBounds);
-              firstFit = false;
-            }
-          } else {
-            userMarker.setPosition(lastUserLatLng);
-          }
-        }, () => {
-          alert("⚠️ Location unavailable");
-        });
-      }
+      // Start the continuous background geolocation watch tracking loops safely
+      navigator.geolocation.watchPosition(pos => {
+        const { latitude, longitude } = pos.coords;
+        lastUserLatLng = new google.maps.LatLng(latitude, longitude);
+        
+        if (userMarker) {
+          userMarker.setPosition(lastUserLatLng);
+        }
+      });
     }
 
-    // Haversine formula computation engine
+        // Haversine formula computation engine
     function haversineDistance(lat1, lon1, lat2, lon2) {
-      const R = 6371000;
+      const R = 6371000; // Radius of the earth in meters
       const toRad = deg => deg * Math.PI / 180;
       const dLat = toRad(lat2 - lat1);
       const dLon = toRad(lon2 - lon1);
@@ -180,16 +251,17 @@
         Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
         Math.sin(dLon/2) * Math.sin(dLon/2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      return R * c;
+      return R * c; // Distance in meters
     }
 
+    // Distance metrics text conversion engine
     function formatDistance(meters) {
       if (meters < 1000) return `${Math.round(meters)} m`;
       return `${(meters/1000).toFixed(2)} km`;
     }
 
     // Initialize application layout window timeline
-    window.onload = initMap;
+    window.onload = checkLocationMandatory;
   </script>
 </body>
 </html>
