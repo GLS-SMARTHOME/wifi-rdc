@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Crucial for mobile scaling -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wi-Fi Access Page</title>
+  <style>
+    /* Mobile-first resets */
+    * { box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      padding: 20px; 
+      background-color: #f9f9fb;
+      color: #333;
+      line-height: 1.5;
+    }
+    #accessSection, #locationSection, #deviceSection { 
+      max-width: 100%; 
+      margin: 20px auto; 
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    h2 { margin-top: 0; font-size: 1.4rem; text-align: center; }
+    
+    /* Larger touch targets for mobile fingers */
+    input, select { 
+      width: 100%; 
+      padding: 14px; 
+      margin: 15px 0; 
+      font-size: 16px; /* Prevents iOS auto-zoom on focus */
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #fff;
+    }
+    button { 
+      width: 100%; 
+      padding: 14px; 
+      font-size: 16px; 
+      font-weight: bold;
+      background-color: #007AFF; 
+      color: white; 
+      border: none; 
+      border-radius: 8px;
+      cursor: pointer; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:active { opacity: 0.8; }
+
+    ul { padding: 0; margin-top: 20px; }
+    li { 
+      list-style: none; 
+      padding: 16px; 
+      margin-bottom: 10px; 
+      background: #f1f1f7; 
+      border-radius: 8px;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.2s;
+    }
+    /* Add a visual cue that it is deletable */
+    li::after {
+      content: '✕';
+      color: #ff3b30;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    li:active { background: #ffd6d6; }
+  </style>
+</head>
+<body>
+
+<div id="accessSection">
+  <h2>GESTION WIFI</h2>
+  <input type="tel" id="accessInput" placeholder="Enter Access Code" pattern="[0-9]*">
+  <button id="checkBtn">Unlock Access</button>
+</div>
+
+<!-- Intermediate Step: Location Selection Menu -->
+<div id="locationSection" style="display:none;">
+  <h2>Select Location</h2>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Choose a station to view its active devices.</p>
+  <select id="locationSelect">
+    <option value="" disabled selected>-- Select a Location --</option>
+    <option value="location1">Location Preset 1</option>
+    <option value="location2">Location Preset 2</option>
+    <option value="location3">Location Preset 3</option>
+  </select>
+  <button id="confirmLocationBtn">View Devices</button>
+</div>
+
+<div id="deviceSection" style="display:none;">
+  <h2>Active Devices</h2>
+  <p style="text-align: center; font-size: 0.9rem; color: #666;">Tap a device to remove it.</p>
+  <ul id="deviceList"></ul>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
+  authDomain: "xoxo-store.firebaseapp.com",
+  databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+  projectId: "xoxo-store",
+  storageBucket: "xoxo-store.firebasestorage.app",
+  messagingSenderId: "667290233046",
+  appId: "1:667290233046:web:dbbc9130ff38b0900f8177"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const accessSection = document.getElementById("accessSection");
+const locationSection = document.getElementById("locationSection");
+const deviceSection = document.getElementById("deviceSection");
+
+const accessInput = document.getElementById("accessInput");
+const checkBtn = document.getElementById("checkBtn");
+const locationSelect = document.getElementById("locationSelect");
+const confirmLocationBtn = document.getElementById("confirmLocationBtn");
+const deviceList = document.getElementById("deviceList");
+
+let currentUnsubscribe = null;
+let selectedLocationPath = "";
+
+checkBtn.addEventListener("click", async () => {
+  const enteredCode = accessInput.value.trim();
+  if (!enteredCode) {
+    alert("Please enter access code.");
+    return;
+  }
+
+  try {
+    // Moved authentication path target to code/wifi-seller
+    const snapshot = await get(ref(db, "code/wifi-seller"));
+    if (snapshot.exists()) {
+      const storedCode = snapshot.val();
+      if (String(storedCode) === enteredCode) {
+        accessSection.style.display = "none";
+        locationSection.style.display = "block";
+      } else {
+        alert("❌ Access denied!");
+      }
+    }
+  } catch (error) {
+    alert("Error: " + error.message);
+  }
+});
+
+confirmLocationBtn.addEventListener("click", () => {
+  const selectedLoc = locationSelect.value;
+  if (!selectedLoc) {
+    alert("Please select a location branch first.");
+    return;
+  }
+
+  selectedLocationPath = selectedLoc;
+  locationSection.style.display = "none";
+  deviceSection.style.display = "block";
+  loadDevices();
+});
+
+function loadDevices() {
+  // If a previous location real-time listener is running, kill it to prevent collision leaks
+  if (currentUnsubscribe) {
+    currentUnsubscribe();
+  }
+
+  // Devices now dynamic and safely scoped under devices/[selectedLocationPath]
+  const dbTargetRef = ref(db, `devices/${selectedLocationPath}`);
+  
+  currentUnsubscribe = onValue(dbTargetRef, snapshot => {
+    deviceList.innerHTML = "";
+    
+    if (!snapshot.exists()) {
+      const emptyLi = document.createElement("p");
+      emptyLi.style.textAlign = "center";
+      emptyLi.style.color = "#888";
+      emptyLi.textContent = "No active devices at this location.";
+      deviceList.appendChild(emptyLi);
+      return;
+    }
+
+    snapshot.forEach(child => {
+      const key = child.key;
+      const li = document.createElement("li");
+      li.textContent = key;
+      li.onclick = async () => {
+        if (confirm(`Delete "${key}" from ${selectedLocationPath}?`)) {
+          try {
+            await remove(ref(db, `devices/${selectedLocationPath}/${key}`));
+          } catch (err) {
+            alert("Removal error: " + err.message);
+          }
+        }
+      };
+      deviceList.appendChild(li);
+    });
+  });
+}
+</script>
+</body>
+</html>
