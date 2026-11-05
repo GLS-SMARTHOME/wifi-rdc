@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un appareil</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; margin: 0; background-color: #f9f9f9; }
+        h2 { margin-top: 20px; font-size: 1.5em; text-align: center; }
+        input, select, button { padding: 12px; margin: 10px 0; width: 100%; max-width: 400px; font-size: 16px; box-sizing: border-box; border-radius: 8px; border: 1px solid #ccc; display: block; margin-left: auto; margin-right: auto; }
+        button { background-color: #4CAF50; color: white; border: none; }
+        button:hover { background-color: #45a049; cursor: pointer; }
+        a { text-align: center; display: block; margin-top: 20px; color: #333; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        #uploadSection { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Section d'accès -->
+    <div id="accessSection">
+        <h2>Accès requis</h2>
+        <input type="password" id="accessCode" placeholder="Entrez le code d'accès" />
+        <br>
+        <button id="checkAccessBtn">Valider</button>
+    </div>
+
+    <!-- Section d'ajout d'appareil -->
+    <div id="uploadSection">
+        <h2>Ajouter nouveau code wifi pour 24h</h2>
+        
+        <!-- Les valeurs ont été modifiées pour inclure le préfixe 'devices/' et des minuscules propres -->
+        <select id="pathCategory">
+            <option value="" disabled selected>-- Choisir Site --</option>
+            <option value="devices/lufungula">LUFUNGULA</option>
+            <option value="devices/marche-liberte">MARCHE LIBERTE</option>
+            <option value="devices/baramoto">BARAMOTO</option>
+        </select>
+        
+        <input type="text" id="deviceCode" placeholder="Entrez le code de l'appareil" />
+        <br>
+        <button id="uploadBtn">Téléverser</button>
+        <a href="https://www.congopokemon.store/wifi-rdc/main-recharge">⬅ Retour à la liste</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIlkvwyaF6FPPbXBJDqHwuTS5S3QKG3l8",
+            authDomain: "xoxo-store.firebaseapp.com",
+            databaseURL: "https://xoxo-store-default-rtdb.firebaseio.com",
+            projectId: "xoxo-store",
+            storageBucket: "xoxo-store.firebasestorage.app",
+            messagingSenderId: "667290233046",
+            appId: "1:667290233046:web:dbbc9130ff38b0900f8177"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const accessInput = document.getElementById("accessCode");
+        const checkBtn = document.getElementById("checkAccessBtn");
+        const uploadSection = document.getElementById("uploadSection");
+        const accessSection = document.getElementById("accessSection");
+
+        // Vérifier le code d'accès
+        checkBtn.addEventListener("click", async () => {
+            const enteredCode = accessInput.value.trim();
+            if (!enteredCode) {
+                alert("Veuillez entrer le code d'accès.");
+                return;
+            }
+
+            try {
+                const snapshot = await get(ref(db, "code/wifi-adm"));
+                if (snapshot.exists() && String(snapshot.val()) === enteredCode) {
+                    alert("✅ Accès autorisé !");
+                    accessSection.style.display = "none";
+                    uploadSection.style.display = "block";
+                } else {
+                    alert("❌ Accès refusé !");
+                }
+            } catch (error) {
+                alert("Erreur lors de la vérification du code : " + error.message);
+            }
+        });
+
+        // Téléverser le code de l'appareil
+        document.getElementById("uploadBtn").addEventListener("click", async () => {
+            const code = document.getElementById("deviceCode").value.trim();
+            const basePath = document.getElementById("pathCategory").value;
+
+            if (!basePath) {
+                alert("Veuillez choisir un site.");
+                return;
+            }
+            if (!code) {
+                alert("Veuillez entrer le code de l'appareil.");
+                return;
+            }
+
+            // Le chemin généré sera automatiquement : "devices/lufungula/[votre_code]"
+            const deviceRef = ref(db, basePath + "/" + code);
+
+            try {
+                const snapshot = await get(deviceRef);
+                if (snapshot.exists()) {
+                    alert("❌ Ce code d'appareil existe déjà dans cette section !");
+                } else {
+                    await set(deviceRef, true);
+                    alert("✅ Appareil ajouté avec succès !");
+                    document.getElementById("deviceCode").value = "";
+                }
+            } catch (error) {
+                alert("Erreur lors du téléversement : " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>
